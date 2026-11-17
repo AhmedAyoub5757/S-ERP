@@ -38,7 +38,7 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
 const columns: ColumnDef<StudentRow, any>[] = [
   {
     accessorKey: 'admission_number',
-    header: ({ column }: { column: any }) => (
+    header: ({ column }) => (
       <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
         Admission # <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
@@ -48,13 +48,13 @@ const columns: ColumnDef<StudentRow, any>[] = [
     id: 'full_name',
     accessorFn: (row: StudentRow) => row.profiles?.full_name ?? '',
     header: 'Name',
-    cell: ({ row }: { row: any }) => row.original.profiles?.full_name ?? '—',
+    cell: ({ row }) => row.original.profiles?.full_name ?? '—',
   },
   {
     id: 'class_section',
     accessorFn: (row: StudentRow) => `${row.sections?.classes?.name ?? ''} ${row.sections?.name ?? ''}`,
     header: 'Class / Section',
-    cell: ({ row }: { row: any }) =>
+    cell: ({ row }) =>
       row.original.sections
         ? `${row.original.sections.classes?.name ?? ''} ${row.original.sections.name}`
         : '—',
@@ -62,12 +62,12 @@ const columns: ColumnDef<StudentRow, any>[] = [
   {
     accessorKey: 'gender',
     header: 'Gender',
-    cell: ({ row }: { row: any }) => <span className="capitalize">{row.original.gender}</span>,
+    cell: ({ row }) => <span className="capitalize">{row.original.gender}</span>,
   },
   {
     accessorKey: 'status',
     header: 'Status',
-    cell: ({ row }: { row: any }) => (
+    cell: ({ row }) => (
       <Badge variant={statusVariant[row.original.status] ?? 'default'} className="capitalize">
         {row.original.status}
       </Badge>
@@ -76,7 +76,7 @@ const columns: ColumnDef<StudentRow, any>[] = [
   {
     id: 'actions',
     header: '',
-    cell: ({ row }: { row: any }) => (
+    cell: ({ row }) => (
       <Link
         href={`/dashboard/students/${row.original.id}`}
         className="text-sm font-medium text-primary hover:underline"
