@@ -1,8 +1,8 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
+import { useForm, SubmitHandler } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { studentFormSchema, type StudentFormValues } from '@/lib/validations/student'
 import { createStudent } from '@/app/dashboard/students/actions'
@@ -34,21 +34,21 @@ export function StudentForm({ sections }: { sections: SectionOption[] }) {
   const [submitting, setSubmitting] = useState(false)
 
   const form = useForm<StudentFormValues>({
-    resolver: zodResolver(studentFormSchema),
+    resolver: zodResolver(studentFormSchema) as any,
     defaultValues: {
       fullName: '',
       email: '',
       phone: '',
       admissionNumber: '',
-      sectionId: undefined,
+      sectionId: 0 as any,
       dateOfBirth: '',
-      gender: undefined,
+      gender: 'male',
       bloodGroup: '',
       address: '',
     },
   })
 
-  async function onSubmit(values: StudentFormValues) {
+  const onSubmit: SubmitHandler<StudentFormValues> = async (values) => {
     setSubmitting(true)
     const formData = new FormData()
     Object.entries(values).forEach(([key, value]) => {
@@ -61,7 +61,6 @@ export function StudentForm({ sections }: { sections: SectionOption[] }) {
     if (result?.error) {
       toast.error(result.error)
     }
-    // On success createStudent() redirects server-side; this component unmounts.
   }
 
   return (
@@ -102,7 +101,7 @@ export function StudentForm({ sections }: { sections: SectionOption[] }) {
             <FormItem>
               <FormLabel>Phone</FormLabel>
               <FormControl>
-                <Input placeholder="Optional" {...field} />
+                <Input placeholder="Optional" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -130,7 +129,6 @@ export function StudentForm({ sections }: { sections: SectionOption[] }) {
             <FormItem>
               <FormLabel>Class / Section</FormLabel>
               <Select
-                items={sections.map((s) => ({ label: s.label, value: String(s.id) }))}
                 value={field.value ? String(field.value) : undefined}
                 onValueChange={(val) => field.onChange(Number(val))}
               >
@@ -173,11 +171,6 @@ export function StudentForm({ sections }: { sections: SectionOption[] }) {
             <FormItem>
               <FormLabel>Gender</FormLabel>
               <Select
-                items={[
-                  { label: 'Male', value: 'male' },
-                  { label: 'Female', value: 'female' },
-                  { label: 'Other', value: 'other' },
-                ]}
                 value={field.value}
                 onValueChange={field.onChange}
               >
@@ -204,7 +197,7 @@ export function StudentForm({ sections }: { sections: SectionOption[] }) {
             <FormItem>
               <FormLabel>Blood Group</FormLabel>
               <FormControl>
-                <Input placeholder="Optional, e.g. O+" {...field} />
+                <Input placeholder="Optional, e.g. O+" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -218,7 +211,7 @@ export function StudentForm({ sections }: { sections: SectionOption[] }) {
             <FormItem>
               <FormLabel>Address</FormLabel>
               <FormControl>
-                <Textarea placeholder="Optional" {...field} />
+                <Textarea placeholder="Optional" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
