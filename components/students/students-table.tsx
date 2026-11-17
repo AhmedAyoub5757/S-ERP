@@ -4,14 +4,12 @@ import { useState } from 'react'
 import {
   ColumnDef,
   flexRender,
-  useTable,
-  stockFeatures,
-  tableFeatures,
-  createSortedRowModel,
-  createFilteredRowModel,
-  createPaginatedRowModel,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
   SortingState,
-  PaginationState,
+  useReactTable,
 } from '@tanstack/react-table'
 import {
   Table,
@@ -35,7 +33,7 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
   transferred: 'outline',
 }
 
-const columns: ColumnDef<StudentRow, any>[] = [
+const columns: ColumnDef<StudentRow>[] = [
   {
     accessorKey: 'admission_number',
     header: ({ column }) => (
@@ -46,13 +44,13 @@ const columns: ColumnDef<StudentRow, any>[] = [
   },
   {
     id: 'full_name',
-    accessorFn: (row: StudentRow) => row.profiles?.full_name ?? '',
+    accessorFn: (row) => row.profiles?.full_name ?? '',
     header: 'Name',
     cell: ({ row }) => row.original.profiles?.full_name ?? '—',
   },
   {
     id: 'class_section',
-    accessorFn: (row: StudentRow) => `${row.sections?.classes?.name ?? ''} ${row.sections?.name ?? ''}`,
+    accessorFn: (row) => `${row.sections?.classes?.name ?? ''} ${row.sections?.name ?? ''}`,
     header: 'Class / Section',
     cell: ({ row }) =>
       row.original.sections
@@ -87,29 +85,25 @@ const columns: ColumnDef<StudentRow, any>[] = [
   },
 ]
 
-const features = tableFeatures({
-  ...stockFeatures,
-  sortedRowModel: createSortedRowModel(),
-  filteredRowModel: createFilteredRowModel(),
-  paginatedRowModel: createPaginatedRowModel(),
-})
-
 export function StudentsTable({ data }: { data: StudentRow[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  })
 
-  const table = useTable({
-    features,
+  const table = useReactTable({
     data,
     columns,
-    state: { sorting, globalFilter, pagination },
+    state: { sorting, globalFilter },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 10,
+      },
+    },
   })
 
   return (
@@ -166,7 +160,7 @@ export function StudentsTable({ data }: { data: StudentRow[] }) {
           Previous
         </Button>
         <span className="text-sm text-muted-foreground">
-          Page {table.state.pagination.pageIndex + 1} of {table.getPageCount()}
+          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </span>
         <Button
           variant="outline"
