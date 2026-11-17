@@ -35,7 +35,8 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
   transferred: 'outline',
 }
 
-const columns: ColumnDef<StudentRow, any>[] = [
+// const columns: ColumnDef<StudentRow, any>[] = [
+const columns: any[] = [
   {
     accessorKey: 'admission_number',
     header: ({ column }: { column: any }) => (
