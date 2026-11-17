@@ -102,10 +102,10 @@ export function StudentsTable({ data }: { data: StudentRow[] }) {
     pageSize: 10,
   })
 
-  // @ts-ignore - Bypass v9 strict feature type constraints
+  // @ts-ignore
   const table = useTable({
     features,
-    data,
+    data: data as any,
     columns: columns as any,
     state: { sorting, globalFilter, pagination },
     onSortingChange: setSorting,
