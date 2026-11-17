@@ -16,7 +16,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <SidebarProvider>
-      <AppSidebar roles={roles} />
+      <AppSidebar roles={roles} userId={user.id} />
       <SidebarInset>
         <header className="flex h-14 items-center justify-between border-b px-4">
           <SidebarTrigger />

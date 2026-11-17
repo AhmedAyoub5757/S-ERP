@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentUserRoles } from '@/lib/auth/get-user-roles'
-import { studentFormSchema } from '@/lib/validations/student'
+import { studentFormSchema, studentUpdateSchema } from '@/lib/validations/student'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -85,4 +85,60 @@ export async function createStudent(formData: FormData) {
 
   revalidatePath('/dashboard/students')
   redirect('/dashboard/students')
+}
+
+export async function updateStudent(studentId: string, formData: FormData) {
+  const roles = await getCurrentUserRoles()
+  if (!roles.includes('school_admin') && !roles.includes('receptionist')) {
+    return { error: 'You do not have permission to edit students.' }
+  }
+
+  const raw = {
+    fullName: formData.get('fullName'),
+    phone: formData.get('phone') || undefined,
+    admissionNumber: formData.get('admissionNumber'),
+    sectionId: formData.get('sectionId'),
+    dateOfBirth: formData.get('dateOfBirth'),
+    gender: formData.get('gender'),
+    bloodGroup: formData.get('bloodGroup') || undefined,
+    address: formData.get('address') || undefined,
+    status: formData.get('status'),
+  }
+
+  const parsed = studentUpdateSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
+  }
+  const data = parsed.data
+  const supabase = await createClient()
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ full_name: data.fullName, phone: data.phone ?? null })
+    .eq('id', studentId)
+
+  if (profileError) {
+    return { error: `Could not update profile: ${profileError.message}` }
+  }
+
+  const { error: studentError } = await supabase
+    .from('students')
+    .update({
+      admission_number: data.admissionNumber,
+      section_id: data.sectionId,
+      date_of_birth: data.dateOfBirth,
+      gender: data.gender,
+      blood_group: data.bloodGroup ?? null,
+      address: data.address ?? null,
+      status: data.status,
+    })
+    .eq('id', studentId)
+
+  if (studentError) {
+    return { error: `Could not update student record: ${studentError.message}` }
+  }
+
+  revalidatePath(`/dashboard/students/${studentId}`)
+  revalidatePath('/dashboard/students')
+  redirect(`/dashboard/students/${studentId}`)
 }

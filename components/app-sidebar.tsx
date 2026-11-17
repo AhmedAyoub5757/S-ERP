@@ -1,7 +1,7 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   Sidebar,
   SidebarContent,
@@ -12,15 +12,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar";
-import { navItems } from "@/lib/nav-config";
-import { GraduationCap } from "lucide-react";
+} from '@/components/ui/sidebar'
+import { navItems } from '@/lib/nav-config'
+import { GraduationCap, User as UserIcon } from 'lucide-react'
 
-export function AppSidebar({ roles }: { roles: string[] }) {
-  const pathname = usePathname();
-  const visibleItems = navItems.filter((item) =>
-    item.roles.some((r) => roles.includes(r)),
-  );
+export function AppSidebar({ roles, userId }: { roles: string[]; userId: string }) {
+  const pathname = usePathname()
+  const visibleItems = navItems.filter((item) => item.roles.some((r) => roles.includes(r)))
+
+  const items = roles.includes('student')
+    ? [...visibleItems, { title: 'My Profile', url: `/dashboard/students/${userId}`, icon: UserIcon }]
+    : visibleItems
 
   return (
     <Sidebar>
@@ -35,12 +37,9 @@ export function AppSidebar({ roles }: { roles: string[] }) {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {visibleItems.map((item) => (
+              {items.map((item) => (
                 <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton
-                    render={<Link href={item.url} />}
-                    isActive={pathname === item.url}
-                  >
+                  <SidebarMenuButton render={<Link href={item.url} />} isActive={pathname === item.url}>
                     <item.icon />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
@@ -51,5 +50,5 @@ export function AppSidebar({ roles }: { roles: string[] }) {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-  );
+  )
 }

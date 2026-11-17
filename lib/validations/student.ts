@@ -13,3 +13,11 @@ export const studentFormSchema = z.object({
 })
 
 export type StudentFormValues = z.infer<typeof studentFormSchema>
+
+export const studentUpdateSchema = studentFormSchema
+  .omit({ email: true })
+  .extend({
+    status: z.enum(['active', 'inactive', 'graduated', 'transferred']),
+  })
+
+export type StudentUpdateValues = z.infer<typeof studentUpdateSchema>
