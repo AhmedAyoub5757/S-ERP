@@ -41,7 +41,7 @@ export function EditSectionDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [teacherId, setTeacherId] = useState<string | undefined>(currentTeacherId ?? undefined)
+  const [teacherId, setTeacherId] = useState<string | null>(currentTeacherId)
   const [capacity, setCapacity] = useState<string>(currentCapacity ? String(currentCapacity) : '')
   const router = useRouter()
 
@@ -78,8 +78,8 @@ export function EditSectionDialog({
             <Label>Class Teacher</Label>
             <Select
               items={teachers.map((t) => ({ label: t.name, value: t.id }))}
-              value={teacherId}
-              onValueChange={setTeacherId}
+              value={teacherId ?? undefined}
+              onValueChange={(value) => setTeacherId(value)}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a teacher" />
