@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users } from 'lucide-react'
+import { LayoutDashboard, Users, School } from 'lucide-react'
 
 export type NavItem = {
   title: string
@@ -20,4 +20,10 @@ export const navItems: NavItem[] = [
     icon: Users,
     roles: ['school_admin', 'principal', 'teacher', 'receptionist'],
   },
+  {
+  title: 'Classes & Sections',
+  url: '/dashboard/classes',
+  icon: School,
+  roles: ['school_admin', 'principal'],
+},
 ]
