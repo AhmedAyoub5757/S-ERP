@@ -4,12 +4,14 @@ import { useState } from 'react'
 import {
   ColumnDef,
   flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
+  useTable,
+  stockFeatures,
+  tableFeatures,
+  createSortedRowModel,
+  createFilteredRowModel,
+  createPaginatedRowModel,
   SortingState,
-  useReactTable,
+  PaginationState,
 } from '@tanstack/react-table'
 import {
   Table,
@@ -33,10 +35,10 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
   transferred: 'outline',
 }
 
-const columns: ColumnDef<StudentRow>[] = [
+const columns: ColumnDef<StudentRow, any>[] = [
   {
     accessorKey: 'admission_number',
-    header: ({ column }) => (
+    header: ({ column }: { column: any }) => (
       <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
         Admission # <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
@@ -44,15 +46,15 @@ const columns: ColumnDef<StudentRow>[] = [
   },
   {
     id: 'full_name',
-    accessorFn: (row) => row.profiles?.full_name ?? '',
+    accessorFn: (row: StudentRow) => row.profiles?.full_name ?? '',
     header: 'Name',
-    cell: ({ row }) => row.original.profiles?.full_name ?? '—',
+    cell: ({ row }: { row: any }) => row.original.profiles?.full_name ?? '—',
   },
   {
     id: 'class_section',
-    accessorFn: (row) => `${row.sections?.classes?.name ?? ''} ${row.sections?.name ?? ''}`,
+    accessorFn: (row: StudentRow) => `${row.sections?.classes?.name ?? ''} ${row.sections?.name ?? ''}`,
     header: 'Class / Section',
-    cell: ({ row }) =>
+    cell: ({ row }: { row: any }) =>
       row.original.sections
         ? `${row.original.sections.classes?.name ?? ''} ${row.original.sections.name}`
         : '—',
@@ -60,12 +62,12 @@ const columns: ColumnDef<StudentRow>[] = [
   {
     accessorKey: 'gender',
     header: 'Gender',
-    cell: ({ row }) => <span className="capitalize">{row.original.gender}</span>,
+    cell: ({ row }: { row: any }) => <span className="capitalize">{row.original.gender}</span>,
   },
   {
     accessorKey: 'status',
     header: 'Status',
-    cell: ({ row }) => (
+    cell: ({ row }: { row: any }) => (
       <Badge variant={statusVariant[row.original.status] ?? 'default'} className="capitalize">
         {row.original.status}
       </Badge>
@@ -74,7 +76,7 @@ const columns: ColumnDef<StudentRow>[] = [
   {
     id: 'actions',
     header: '',
-    cell: ({ row }) => (
+    cell: ({ row }: { row: any }) => (
       <Link
         href={`/dashboard/students/${row.original.id}`}
         className="text-sm font-medium text-primary hover:underline"
@@ -85,25 +87,29 @@ const columns: ColumnDef<StudentRow>[] = [
   },
 ]
 
+const features = tableFeatures({
+  ...stockFeatures,
+  sortedRowModel: createSortedRowModel(),
+  filteredRowModel: createFilteredRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+})
+
 export function StudentsTable({ data }: { data: StudentRow[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
 
-  const table = useReactTable({
+  const table = useTable({
+    features,
     data,
     columns,
-    state: { sorting, globalFilter },
+    state: { sorting, globalFilter, pagination },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
+    onPaginationChange: setPagination,
   })
 
   return (
@@ -160,7 +166,7 @@ export function StudentsTable({ data }: { data: StudentRow[] }) {
           Previous
         </Button>
         <span className="text-sm text-muted-foreground">
-          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+          Page {table.state.pagination.pageIndex + 1} of {table.getPageCount()}
         </span>
         <Button
           variant="outline"
