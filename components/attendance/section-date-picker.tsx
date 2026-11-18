@@ -38,7 +38,7 @@ export function SectionDatePicker({
         <Select
           items={sections.map((s) => ({ label: s.label, value: String(s.id) }))}
           value={sectionId}
-          onValueChange={setSectionId}
+          onValueChange={(val) => setSectionId(val ?? undefined)}
         >
           <SelectTrigger className="w-[220px]"><SelectValue placeholder="Select a section" /></SelectTrigger>
           <SelectContent>

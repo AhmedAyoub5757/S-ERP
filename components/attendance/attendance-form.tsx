@@ -81,7 +81,13 @@ export function AttendanceForm({
               <p className="text-sm text-muted-foreground">#{s.admissionNumber}</p>
             </div>
             {editable ? (
-              <Select items={statusOptions} value={records[s.id]} onValueChange={(val) => setStatus(s.id, val)}>
+              <Select
+                items={statusOptions}
+                value={records[s.id]}
+                onValueChange={(val) => {
+                  if (val) setStatus(s.id, val)
+                }}
+              >
                 <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {statusOptions.map((o) => (
