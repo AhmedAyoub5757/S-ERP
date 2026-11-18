@@ -20,9 +20,14 @@ export function AppSidebar({ roles, userId }: { roles: string[]; userId: string 
   const pathname = usePathname()
   const visibleItems = navItems.filter((item) => item.roles.some((r) => roles.includes(r)))
 
-  const items = roles.includes('student')
-    ? [...visibleItems, { title: 'My Profile', url: `/dashboard/students/${userId}`, icon: UserIcon }]
-    : visibleItems
+  const extraItems: { title: string; url: string; icon: typeof UserIcon }[] = []
+  if (roles.includes('student')) {
+    extraItems.push({ title: 'My Profile', url: `/dashboard/students/${userId}`, icon: UserIcon })
+  }
+  if (roles.includes('teacher')) {
+    extraItems.push({ title: 'My Profile', url: `/dashboard/teachers/${userId}`, icon: UserIcon })
+  }
+  const items = [...visibleItems, ...extraItems]
 
   return (
     <Sidebar>
