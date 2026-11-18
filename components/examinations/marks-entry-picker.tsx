@@ -26,7 +26,8 @@ export function MarksEntryPicker({
     defaultExamSubjectId ? String(defaultExamSubjectId) : undefined
   )
 
-  function handleExaminationChange(val: string) {
+  function handleExaminationChange(val: string | null) {
+    if (!val) return
     setExaminationId(val)
     router.push(`/dashboard/examinations/marks?examinationId=${val}`)
   }
@@ -55,7 +56,7 @@ export function MarksEntryPicker({
           <Select
             items={examSubjects.map((e) => ({ label: e.label!, value: String(e.id) }))}
             value={examSubjectId}
-            onValueChange={setExamSubjectId}
+            onValueChange={(val) => setExamSubjectId(val ?? undefined)}
           >
             <SelectTrigger className="w-[260px]"><SelectValue placeholder="Select subject/section" /></SelectTrigger>
             <SelectContent>{examSubjects.map((e) => <SelectItem key={e.id} value={String(e.id)}>{e.label}</SelectItem>)}</SelectContent>
