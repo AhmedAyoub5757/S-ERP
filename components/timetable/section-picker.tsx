@@ -20,7 +20,11 @@ export function SectionPicker({ sections, defaultSectionId }: { sections: Option
     <div className="flex items-end gap-3">
       <div className="space-y-1">
         <label className="text-sm font-medium">Section</label>
-        <Select items={sections.map((s) => ({ label: s.label, value: String(s.id) }))} value={sectionId} onValueChange={setSectionId}>
+        <Select 
+          items={sections.map((s) => ({ label: s.label, value: String(s.id) }))} 
+          value={sectionId} 
+          onValueChange={(val) => setSectionId(val ?? undefined)}
+        >
           <SelectTrigger className="w-[220px]"><SelectValue placeholder="Select a section" /></SelectTrigger>
           <SelectContent>{sections.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.label}</SelectItem>)}</SelectContent>
         </Select>
