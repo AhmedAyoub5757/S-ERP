@@ -75,7 +75,8 @@ export default async function AnnouncementsPage() {
   let sectionOptions: { id: number; label: string }[] = []
   if (isManager) {
     const { data: classRows } = await supabase.from('classes').select('id, name').order('name')
-    classOptions = classRows ?? []
+    classOptions = (classRows ?? []).map((c: any) => ({ id: c.id, label: c.name }))
+
     const { data: sectionRows } = await supabase.from('sections').select('id, name, classes ( name )').order('class_id')
     sectionOptions = (sectionRows ?? []).map((s: any) => ({ id: s.id, label: `${s.classes?.name ?? ''} - ${s.name}` }))
   }
