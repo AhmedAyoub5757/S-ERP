@@ -54,6 +54,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     .select('marks_obtained, exam_subjects ( max_marks, passing_marks, subjects ( name ), examinations ( name ) )')
     .eq('student_id', id)
 
+  const { data: invoiceRecords } = await supabase
+    .from('invoices')
+    .select('id, invoice_number, total_amount, status, due_date')
+    .eq('student_id', id)
+    .order('issue_date', { ascending: false })
+
   const profile = (student as any).profiles
   const section = (student as any).sections
 
@@ -179,6 +185,30 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             ))
           ) : (
             <p className="text-muted-foreground">No exam results yet.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Fees</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {invoiceRecords && invoiceRecords.length > 0 ? (
+            invoiceRecords.map((inv: any) => (
+              <div key={inv.id} className="flex items-center justify-between border-b pb-2 last:border-0">
+                <div>
+                  <p className="font-medium">{inv.invoice_number}</p>
+                  <p className="text-muted-foreground">Due {inv.due_date}</p>
+                </div>
+                <div className="text-right">
+                  <p>Rs. {Number(inv.total_amount).toLocaleString()}</p>
+                  <Badge variant={inv.status === 'paid' ? 'default' : 'destructive'} className="capitalize">
+                    {inv.status.replace('_', ' ')}
+                  </Badge>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-muted-foreground">No invoices yet.</p>
           )}
         </CardContent>
       </Card>

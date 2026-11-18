@@ -6,6 +6,7 @@ import {
   CalendarCheck,
   FileText,
   PencilLine,
+  Wallet,
 } from "lucide-react";
 
 export type NavItem = {
@@ -65,5 +66,11 @@ export const navItems: NavItem[] = [
     url: "/dashboard/examinations/marks",
     icon: PencilLine,
     roles: ["school_admin", "teacher"],
+  },
+  {
+    title: "Fees",
+    url: "/dashboard/fees",
+    icon: Wallet,
+    roles: ["school_admin", "accountant", "principal"],
   },
 ];
