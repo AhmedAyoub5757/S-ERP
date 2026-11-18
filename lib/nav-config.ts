@@ -80,4 +80,10 @@ export const navItems: NavItem[] = [
     icon: Clock,
     roles: ["school_admin", "principal", "teacher", "student"],
   },
+  {
+    title: "My Children",
+    url: "/dashboard/children",
+    icon: Users,
+    roles: ["parent"],
+  },
 ];
