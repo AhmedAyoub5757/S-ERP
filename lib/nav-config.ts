@@ -7,6 +7,7 @@ import {
   FileText,
   PencilLine,
   Wallet,
+  Clock,
 } from "lucide-react";
 
 export type NavItem = {
@@ -72,5 +73,11 @@ export const navItems: NavItem[] = [
     url: "/dashboard/fees",
     icon: Wallet,
     roles: ["school_admin", "accountant", "principal"],
+  },
+  {
+    title: "Timetable",
+    url: "/dashboard/timetable",
+    icon: Clock,
+    roles: ["school_admin", "principal", "teacher", "student"],
   },
 ];
