@@ -1,4 +1,10 @@
-import { LayoutDashboard, Users, School, GraduationCap } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  School,
+  GraduationCap,
+  CalendarCheck,
+} from "lucide-react";
 
 export type NavItem = {
   title: string;
@@ -39,5 +45,11 @@ export const navItems: NavItem[] = [
     url: "/dashboard/teachers",
     icon: GraduationCap,
     roles: ["school_admin", "principal"],
+  },
+  {
+    title: "Attendance",
+    url: "/dashboard/attendance",
+    icon: CalendarCheck,
+    roles: ["school_admin", "principal", "teacher"],
   },
 ];

@@ -42,6 +42,13 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     .select('relationship, parents ( id, occupation, profiles ( full_name, email, phone ) )')
     .eq('student_id', id)
 
+  const { data: attendanceRecords } = await supabase
+    .from('attendance')
+    .select('date, status')
+    .eq('student_id', id)
+    .order('date', { ascending: false })
+    .limit(20)
+
   const profile = (student as any).profiles
   const section = (student as any).sections
 
@@ -121,6 +128,31 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             ))
           ) : (
             <p className="text-muted-foreground">No guardians linked.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Attendance</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {attendanceRecords && attendanceRecords.length > 0 ? (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {attendanceRecords.map((r: any, i: number) => (
+                <div key={i} className="flex items-center justify-between rounded border p-2">
+                  <span className="text-muted-foreground">{r.date}</span>
+                  <Badge
+                    variant={r.status === 'present' ? 'default' : r.status === 'absent' ? 'destructive' : 'secondary'}
+                    className="capitalize"
+                  >
+                    {r.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">No attendance records yet.</p>
           )}
         </CardContent>
       </Card>
