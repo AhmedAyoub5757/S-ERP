@@ -49,6 +49,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     .order('date', { ascending: false })
     .limit(20)
 
+  const { data: markRecords } = await supabase
+    .from('marks')
+    .select('marks_obtained, exam_subjects ( max_marks, passing_marks, subjects ( name ), examinations ( name ) )')
+    .eq('student_id', id)
+
   const profile = (student as any).profiles
   const section = (student as any).sections
 
@@ -153,6 +158,27 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             </div>
           ) : (
             <p className="text-muted-foreground">No attendance records yet.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Exam Results</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {markRecords && markRecords.length > 0 ? (
+            markRecords.map((m: any, i: number) => (
+              <div key={i} className="flex items-center justify-between border-b pb-2 last:border-0">
+                <div>
+                  <p className="font-medium">{m.exam_subjects?.subjects?.name}</p>
+                  <p className="text-muted-foreground">{m.exam_subjects?.examinations?.name}</p>
+                </div>
+                <Badge variant={m.marks_obtained >= m.exam_subjects?.passing_marks ? 'default' : 'destructive'}>
+                  {m.marks_obtained} / {m.exam_subjects?.max_marks}
+                </Badge>
+              </div>
+            ))
+          ) : (
+            <p className="text-muted-foreground">No exam results yet.</p>
           )}
         </CardContent>
       </Card>

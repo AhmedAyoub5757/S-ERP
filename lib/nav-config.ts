@@ -4,6 +4,8 @@ import {
   School,
   GraduationCap,
   CalendarCheck,
+  FileText,
+  PencilLine,
 } from "lucide-react";
 
 export type NavItem = {
@@ -51,5 +53,17 @@ export const navItems: NavItem[] = [
     url: "/dashboard/attendance",
     icon: CalendarCheck,
     roles: ["school_admin", "principal", "teacher"],
+  },
+  {
+    title: "Examinations",
+    url: "/dashboard/examinations",
+    icon: FileText,
+    roles: ["school_admin", "principal", "teacher"],
+  },
+  {
+    title: "Enter Marks",
+    url: "/dashboard/examinations/marks",
+    icon: PencilLine,
+    roles: ["school_admin", "teacher"],
   },
 ];
