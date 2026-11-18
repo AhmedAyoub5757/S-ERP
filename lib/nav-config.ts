@@ -8,6 +8,7 @@ import {
   PencilLine,
   Wallet,
   Clock,
+  Megaphone,
 } from "lucide-react";
 
 export type NavItem = {
@@ -85,5 +86,19 @@ export const navItems: NavItem[] = [
     url: "/dashboard/children",
     icon: Users,
     roles: ["parent"],
+  },
+  {
+    title: "Announcements",
+    url: "/dashboard/announcements",
+    icon: Megaphone,
+    roles: [
+      "school_admin",
+      "principal",
+      "teacher",
+      "student",
+      "parent",
+      "receptionist",
+      "accountant",
+    ],
   },
 ];
