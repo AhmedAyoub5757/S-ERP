@@ -8,20 +8,21 @@ export const dynamic = 'force-dynamic'
 export default async function InvoicesPage() {
   const supabase = await createClient()
 
-  const { data: invoices } = await supabase
-    .from('invoices')
-    .select(`
-      id, invoice_number, issue_date, due_date, total_amount, status,
-      students ( admission_number, profiles ( full_name ) )
-    `)
-    .order('issue_date', { ascending: false })
+  const [{ data: invoices }, { data: payments }] = await Promise.all([
+    supabase
+      .from('invoices')
+      .select(`
+        id, invoice_number, issue_date, due_date, total_amount, status,
+        students ( admission_number, profiles ( full_name ) )
+      `)
+      .order('issue_date', { ascending: false }),
+    supabase.from('payments').select('amount'),
+  ])
 
   const rows = (invoices ?? []) as unknown as InvoiceRow[]
   const totalInvoiced = rows.reduce((sum, r) => sum + Number(r.total_amount), 0)
-  const totalPaid = rows.filter((r) => r.status === 'paid').reduce((sum, r) => sum + Number(r.total_amount), 0)
-  const totalOutstanding = rows
-    .filter((r) => r.status === 'unpaid' || r.status === 'partially_paid' || r.status === 'overdue')
-    .reduce((sum, r) => sum + Number(r.total_amount), 0)
+  const totalCollected = (payments ?? []).reduce((sum, p) => sum + Number(p.amount), 0)
+  const totalOutstanding = totalInvoiced - totalCollected
 
   return (
     <div className="space-y-6">
@@ -34,7 +35,7 @@ export default async function InvoicesPage() {
         </Card>
         <Card>
           <CardHeader><CardTitle className="text-sm text-muted-foreground">Collected</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-bold text-green-600">Rs. {totalPaid.toLocaleString()}</CardContent>
+          <CardContent className="text-2xl font-bold text-green-600">Rs. {totalCollected.toLocaleString()}</CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle className="text-sm text-muted-foreground">Outstanding</CardTitle></CardHeader>
