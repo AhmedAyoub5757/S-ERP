@@ -7,6 +7,7 @@ import { AttendanceTrendChart } from '@/components/dashboard/attendance-trend-ch
 import { FeeStatusChart } from '@/components/dashboard/fee-status-chart'
 import { StudentsPerClassChart } from '@/components/dashboard/students-per-class-chart'
 import { CollectionsTrendChart } from '@/components/dashboard/collections-trend-chart'
+import { AttendanceBreakdownChart } from '@/components/dashboard/attendance-breakdown-chart'
 
 export const dynamic = 'force-dynamic'
 
@@ -380,6 +381,205 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
+    )
+  }
+
+  if (roles.includes('student')) {
+    const { data: studentRow } = await supabase
+      .from('students')
+      .select('section_id, sections ( name, classes ( name ) )')
+      .eq('id', user.id)
+      .single()
+
+    const dayOfWeek = new Date().getDay()
+
+    const [{ data: todaySlots }, { data: attendanceRows }, { data: markRows }, { data: myInvoices }] = await Promise.all([
+      studentRow
+        ? supabase
+            .from('timetable_slots')
+            .select('start_time, end_time, subjects ( name ), profiles ( full_name )')
+            .eq('section_id', studentRow.section_id)
+            .eq('day_of_week', dayOfWeek)
+            .order('start_time')
+        : Promise.resolve({ data: [] }),
+      supabase.from('attendance').select('status').eq('student_id', user.id),
+      supabase
+        .from('marks')
+        .select('marks_obtained, exam_subjects ( max_marks, subjects ( name ), examinations ( name ) )')
+        .eq('student_id', user.id),
+      supabase.from('invoices').select('id, total_amount').eq('student_id', user.id),
+    ])
+
+    const totalAttendance = (attendanceRows ?? []).length
+    const presentCount = (attendanceRows ?? []).filter((a) => a.status === 'present').length
+    const attendancePercent = totalAttendance > 0 ? Math.round((presentCount / totalAttendance) * 100) : null
+
+    const attendanceCounts: Record<string, number> = { present: 0, absent: 0, late: 0, excused: 0 }
+    for (const a of attendanceRows ?? []) {
+      if (a.status in attendanceCounts) attendanceCounts[a.status]++
+    }
+    const attendanceBreakdownData = Object.entries(attendanceCounts).map(([status, count]) => ({ status, count }))
+
+    const totalMaxMarks = (markRows ?? []).reduce((sum, m: any) => sum + Number(m.exam_subjects?.max_marks ?? 0), 0)
+    const totalObtained = (markRows ?? []).reduce((sum, m: any) => sum + Number(m.marks_obtained ?? 0), 0)
+    const averagePercent = totalMaxMarks > 0 ? Math.round((totalObtained / totalMaxMarks) * 100) : null
+
+    const invoiceIds = (myInvoices ?? []).map((i) => i.id)
+    const totalInvoiced = (myInvoices ?? []).reduce((sum, i) => sum + Number(i.total_amount), 0)
+    let totalPaid = 0
+    if (invoiceIds.length > 0) {
+      const { data: myPayments } = await supabase.from('payments').select('amount').in('invoice_id', invoiceIds)
+      totalPaid = (myPayments ?? []).reduce((sum, p) => sum + Number(p.amount), 0)
+    }
+    const feesDue = totalInvoiced - totalPaid
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">My Dashboard</h1>
+          <p className="text-muted-foreground">
+            {studentRow ? `${(studentRow.sections as any)?.classes?.name ?? ''} - ${(studentRow.sections as any)?.name ?? ''}` : ''}
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card>
+            <CardHeader><CardTitle className="text-sm text-muted-foreground">Attendance</CardTitle></CardHeader>
+            <CardContent className="text-2xl font-bold">
+              {attendancePercent !== null ? `${attendancePercent}%` : '—'}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-sm text-muted-foreground">Average Marks</CardTitle></CardHeader>
+            <CardContent className="text-2xl font-bold">
+              {averagePercent !== null ? `${averagePercent}%` : '—'}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-sm text-muted-foreground">Fees Due</CardTitle></CardHeader>
+            <CardContent className={`text-2xl font-bold ${feesDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              Rs. {feesDue.toLocaleString()}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader><CardTitle>Today&apos;s Schedule</CardTitle></CardHeader>
+            <CardContent>
+              {(todaySlots ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No classes scheduled today.</p>
+              ) : (
+                <div className="divide-y">
+                  {(todaySlots ?? []).map((slot: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between py-2 text-sm">
+                      <span className="text-muted-foreground">{slot.start_time} – {slot.end_time}</span>
+                      <span className="font-medium">{slot.subjects?.name}</span>
+                      <Badge variant="outline">{slot.profiles?.full_name}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle>Attendance Breakdown</CardTitle></CardHeader>
+            <CardContent><AttendanceBreakdownChart data={attendanceBreakdownData} /></CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader><CardTitle>Recent Marks</CardTitle></CardHeader>
+          <CardContent>
+            {(markRows ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No marks recorded yet.</p>
+            ) : (
+              <div className="divide-y">
+                {(markRows ?? []).map((m: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between py-2 text-sm">
+                    <div>
+                      <p className="font-medium">{m.exam_subjects?.subjects?.name}</p>
+                      <p className="text-xs text-muted-foreground">{m.exam_subjects?.examinations?.name}</p>
+                    </div>
+                    <span className="font-semibold">{m.marks_obtained} / {m.exam_subjects?.max_marks}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (roles.includes('parent')) {
+    const { data: links } = await supabase
+      .from('parent_students')
+      .select('students ( id, admission_number, profiles ( full_name ), sections ( name, classes ( name ) ) )')
+      .eq('parent_id', user.id)
+
+    const children = (links ?? []).map((l: any) => l.students).filter(Boolean)
+
+    const childSummaries = await Promise.all(
+      children.map(async (child: any) => {
+        const { data: attendanceRows } = await supabase.from('attendance').select('status').eq('student_id', child.id)
+        const total = attendanceRows?.length ?? 0
+        const present = (attendanceRows ?? []).filter((a) => a.status === 'present').length
+        const attendancePercent = total > 0 ? Math.round((present / total) * 100) : null
+
+        const { data: invoices } = await supabase.from('invoices').select('id, total_amount').eq('student_id', child.id)
+        const invoiceIds = (invoices ?? []).map((i) => i.id)
+        const totalInvoiced = (invoices ?? []).reduce((sum, i) => sum + Number(i.total_amount), 0)
+        let totalPaid = 0
+        if (invoiceIds.length > 0) {
+          const { data: payments } = await supabase.from('payments').select('amount').in('invoice_id', invoiceIds)
+          totalPaid = (payments ?? []).reduce((sum, p) => sum + Number(p.amount), 0)
+        }
+        const feesDue = totalInvoiced - totalPaid
+
+        return { ...child, attendancePercent, feesDue }
+      })
+    )
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">My Children</h1>
+          <p className="text-muted-foreground">A quick look at each child&apos;s standing.</p>
+        </div>
+
+        {childSummaries.length === 0 ? (
+          <p className="text-muted-foreground">No children are linked to your account yet. Contact the school office.</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {childSummaries.map((child: any) => (
+              <Card key={child.id}>
+                <CardHeader>
+                  <CardTitle className="text-base">{child.profiles?.full_name}</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    {child.sections?.classes?.name} - {child.sections?.name}
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-1 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Attendance</span>
+                    <span className="font-semibold">
+                      {child.attendancePercent !== null ? `${child.attendancePercent}%` : '—'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Fees Due</span>
+                    <span className={`font-semibold ${child.feesDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      Rs. {child.feesDue.toLocaleString()}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     )
   }
