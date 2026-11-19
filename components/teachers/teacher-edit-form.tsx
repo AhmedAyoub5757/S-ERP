@@ -110,7 +110,7 @@ export function TeacherEditForm({ teacherId, defaults }: { teacherId: string; de
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" loading={submitting}>
           {submitting ? 'Saving...' : 'Save Changes'}
         </Button>
       </form>

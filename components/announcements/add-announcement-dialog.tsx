@@ -118,7 +118,7 @@ export function AddAnnouncementDialog({ classes, sections }: { classes: Option[]
                 </FormItem>
               )} />
             )}
-            <Button type="submit" disabled={submitting}>{submitting ? 'Posting...' : 'Post Announcement'}</Button>
+            <Button type="submit" loading={submitting}>{submitting ? 'Posting...' : 'Post Announcement'}</Button>
           </form>
         </Form>
       </DialogContent>

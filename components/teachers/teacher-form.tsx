@@ -109,7 +109,7 @@ export function TeacherForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" loading={submitting}>
           {submitting ? 'Creating...' : 'Create Teacher'}
         </Button>
       </form>

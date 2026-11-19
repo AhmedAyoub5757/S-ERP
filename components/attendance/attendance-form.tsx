@@ -104,7 +104,7 @@ export function AttendanceForm({
         ))}
       </div>
       {editable && (
-        <Button onClick={handleSave} disabled={submitting}>
+        <Button onClick={handleSave} loading={submitting}>
           {submitting ? 'Saving...' : 'Save Attendance'}
         </Button>
       )}

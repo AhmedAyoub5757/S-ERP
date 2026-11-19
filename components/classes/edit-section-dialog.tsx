@@ -97,7 +97,7 @@ export function EditSectionDialog({
             <Label>Capacity</Label>
             <Input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
           </div>
-          <Button onClick={handleSave} disabled={submitting}>
+          <Button onClick={handleSave} loading={submitting}>
             {submitting ? 'Saving...' : 'Save'}
           </Button>
         </div>

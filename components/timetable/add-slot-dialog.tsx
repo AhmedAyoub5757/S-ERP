@@ -107,7 +107,7 @@ export function AddSlotDialog({ sectionId, teachers, subjects }: { sectionId: nu
             <FormField control={form.control} name="endTime" render={({ field }) => (
               <FormItem><FormLabel>End Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <Button type="submit" disabled={submitting}>{submitting ? 'Adding...' : 'Add Slot'}</Button>
+            <Button type="submit" loading={submitting}>{submitting ? 'Adding...' : 'Add Slot'}</Button>
           </form>
         </Form>
       </DialogContent>

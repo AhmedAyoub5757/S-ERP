@@ -61,7 +61,7 @@ export function AddExaminationDialog() {
             <FormField control={form.control} name="endDate" render={({ field }) => (
               <FormItem><FormLabel>End Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <Button type="submit" disabled={submitting}>{submitting ? 'Creating...' : 'Create'}</Button>
+            <Button type="submit" loading={submitting}>{submitting ? 'Creating...' : 'Create'}</Button>
           </form>
         </Form>
       </DialogContent>

@@ -26,7 +26,7 @@ export function GenerateInvoicesButton({ feeStructureId }: { feeStructureId: num
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={handleClick} disabled={submitting}>
+    <Button variant="outline" size="sm" onClick={handleClick} loading={submitting}>
       {submitting ? 'Generating...' : 'Generate Invoices'}
     </Button>
   )

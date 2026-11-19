@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sidebar'
 import { navItems } from '@/lib/nav-config'
 import { GraduationCap, User as UserIcon } from 'lucide-react'
+import { NavigationProgress } from '@/components/navigation-progress'
 
 export function AppSidebar({ roles, userId }: { roles: string[]; userId: string }) {
   const pathname = usePathname()
@@ -47,6 +48,7 @@ export function AppSidebar({ roles, userId }: { roles: string[]; userId: string 
                   <SidebarMenuButton render={<Link href={item.url} />} isActive={pathname === item.url}>
                     <item.icon />
                     <span>{item.title}</span>
+                    {pathname !== item.url && <NavigationProgress />}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

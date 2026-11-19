@@ -104,7 +104,7 @@ export function AddExamSubjectDialog({
             <FormField control={form.control} name="passingMarks" render={({ field }) => (
               <FormItem><FormLabel>Passing Marks</FormLabel><FormControl><Input type="number" value={field.value} onChange={(e) => field.onChange(Number(e.target.value))} /></FormControl><FormMessage /></FormItem>
             )} />
-            <Button type="submit" disabled={submitting}>{submitting ? 'Adding...' : 'Add'}</Button>
+            <Button type="submit" loading={submitting}>{submitting ? 'Adding...' : 'Add'}</Button>
           </form>
         </Form>
       </DialogContent>

@@ -103,7 +103,7 @@ export function AddFeeStructureDialog({ classes }: { classes: Option[] }) {
                 <FormMessage />
               </FormItem>
             )} />
-            <Button type="submit" disabled={submitting}>{submitting ? 'Creating...' : 'Create'}</Button>
+            <Button type="submit" loading={submitting}>{submitting ? 'Creating...' : 'Create'}</Button>
           </form>
         </Form>
       </DialogContent>

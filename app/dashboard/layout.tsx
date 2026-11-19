@@ -22,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <SidebarTrigger />
           <UserMenu email={user.email ?? ''} roles={roles} />
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="page-enter flex-1 p-4 sm:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

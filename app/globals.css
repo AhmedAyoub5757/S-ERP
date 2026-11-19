@@ -123,8 +123,72 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at 100% 0%, color-mix(in oklch, var(--primary) 5%, transparent), transparent 24rem),
+      radial-gradient(circle at 0% 100%, color-mix(in oklch, var(--chart-2) 6%, transparent), transparent 28rem);
   }
   html {
     @apply font-sans;
+  }
+  button,
+  [role="button"],
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.ui-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--muted);
+}
+
+.ui-skeleton::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--foreground) 7%, transparent), transparent);
+  animation: shimmer 1.6s infinite;
+}
+
+.page-enter {
+  animation: page-enter 220ms ease-out both;
+}
+
+[data-slot="card"] {
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+[data-slot="card"]:hover {
+  box-shadow: 0 12px 32px color-mix(in oklch, var(--foreground) 7%, transparent);
+  transform: translateY(-1px);
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

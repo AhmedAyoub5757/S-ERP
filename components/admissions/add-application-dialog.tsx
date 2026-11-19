@@ -119,7 +119,7 @@ export function AddApplicationDialog({ classes }: { classes: Option[] }) {
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem><FormLabel>Notes (optional)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <Button type="submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Application'}</Button>
+            <Button type="submit" loading={submitting}>{submitting ? 'Submitting...' : 'Submit Application'}</Button>
           </form>
         </Form>
       </DialogContent>

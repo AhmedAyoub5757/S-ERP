@@ -90,7 +90,7 @@ export function RecordPaymentDialog({ invoiceId, maxAmount }: { invoiceId: numbe
             <FormField control={form.control} name="referenceNumber" render={({ field }) => (
               <FormItem><FormLabel>Reference Number</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <Button type="submit" disabled={submitting}>{submitting ? 'Saving...' : 'Record Payment'}</Button>
+            <Button type="submit" loading={submitting}>{submitting ? 'Saving...' : 'Record Payment'}</Button>
           </form>
         </Form>
       </DialogContent>

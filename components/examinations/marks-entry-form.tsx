@@ -72,7 +72,7 @@ export function MarksEntryForm({
         ))}
       </div>
       <p className="text-sm text-muted-foreground">Max marks: {maxMarks}</p>
-      <Button onClick={handleSave} disabled={submitting}>
+      <Button onClick={handleSave} loading={submitting}>
         {submitting ? 'Saving...' : 'Save Marks'}
       </Button>
     </div>

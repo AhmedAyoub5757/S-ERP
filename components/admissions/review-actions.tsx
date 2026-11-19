@@ -30,13 +30,13 @@ export function ReviewActions({ applicationId }: { applicationId: number }) {
 
   return (
     <div className="flex gap-2">
-      <Button size="sm" variant="outline" disabled={!!submitting} onClick={() => handleDecision('approved')}>
-        <Check className="mr-1 h-3 w-3" />
-        Approve
+      <Button size="sm" variant="outline" loading={submitting === 'approved'} disabled={!!submitting && submitting !== 'approved'} onClick={() => handleDecision('approved')}>
+        {submitting !== 'approved' && <Check className="mr-1 h-3 w-3" />}
+        {submitting === 'approved' ? 'Approving...' : 'Approve'}
       </Button>
-      <Button size="sm" variant="outline" disabled={!!submitting} onClick={() => handleDecision('rejected')}>
-        <X className="mr-1 h-3 w-3" />
-        Reject
+      <Button size="sm" variant="outline" loading={submitting === 'rejected'} disabled={!!submitting && submitting !== 'rejected'} onClick={() => handleDecision('rejected')}>
+        {submitting !== 'rejected' && <X className="mr-1 h-3 w-3" />}
+        {submitting === 'rejected' ? 'Rejecting...' : 'Reject'}
       </Button>
     </div>
   )
