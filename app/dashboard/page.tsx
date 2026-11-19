@@ -260,6 +260,130 @@ export default async function DashboardPage() {
     )
   }
 
+  if (roles.includes('teacher')) {
+    const today = new Date()
+    const todayStr = today.toISOString().slice(0, 10)
+    const dayOfWeek = today.getDay()
+
+    const [{ data: todaySlots }, { data: assignments }, { data: homeroomSection }] = await Promise.all([
+      supabase
+        .from('timetable_slots')
+        .select('start_time, end_time, subjects ( name ), sections ( name, classes ( name ) )')
+        .eq('teacher_id', user.id)
+        .eq('day_of_week', dayOfWeek)
+        .order('start_time'),
+      supabase
+        .from('teacher_assignments')
+        .select('section_id, sections ( name, classes ( name ) )')
+        .eq('teacher_id', user.id),
+      supabase
+        .from('sections')
+        .select('id, name, classes ( name )')
+        .eq('class_teacher_id', user.id)
+        .maybeSingle(),
+    ])
+
+    const sectionMap = new Map<number, { id: number; label: string }>()
+    for (const a of assignments ?? []) {
+      const s: any = a.sections
+      if (s) sectionMap.set(a.section_id, { id: a.section_id, label: `${s.classes?.name ?? ''} ${s.name}` })
+    }
+    if (homeroomSection) {
+      const hs: any = homeroomSection
+      sectionMap.set(hs.id, { id: hs.id, label: `${hs.classes?.name ?? ''} ${hs.name}` })
+    }
+    const responsibleSections = Array.from(sectionMap.values())
+
+    const attendanceStatus = await Promise.all(
+      responsibleSections.map(async (section) => {
+        const { count: totalStudents } = await supabase
+          .from('students')
+          .select('*', { count: 'exact', head: true })
+          .eq('section_id', section.id)
+          .eq('status', 'active')
+
+        const { count: markedCount } = await supabase
+          .from('attendance')
+          .select('id, students!inner(section_id)', { count: 'exact', head: true })
+          .eq('date', todayStr)
+          .eq('students.section_id', section.id)
+
+        return {
+          ...section,
+          total: totalStudents ?? 0,
+          marked: markedCount ?? 0,
+        }
+      })
+    )
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">My Dashboard</h1>
+          <p className="text-muted-foreground">
+            {homeroomSection
+              ? `Homeroom: ${(homeroomSection as any).classes?.name ?? ''} ${(homeroomSection as any).name}`
+              : 'No homeroom assigned'}
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Card>
+            <CardHeader><CardTitle className="text-sm text-muted-foreground">Classes Today</CardTitle></CardHeader>
+            <CardContent className="text-2xl font-bold">{(todaySlots ?? []).length}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-sm text-muted-foreground">Sections You&apos;re Responsible For</CardTitle></CardHeader>
+            <CardContent className="text-2xl font-bold">{responsibleSections.length}</CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader><CardTitle>Today&apos;s Schedule</CardTitle></CardHeader>
+            <CardContent>
+              {(todaySlots ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No classes scheduled today.</p>
+              ) : (
+                <div className="divide-y">
+                  {(todaySlots ?? []).map((slot: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between py-2 text-sm">
+                      <span className="text-muted-foreground">{slot.start_time} – {slot.end_time}</span>
+                      <span className="font-medium">{slot.subjects?.name}</span>
+                      <Badge variant="outline">{slot.sections?.classes?.name} {slot.sections?.name}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle>Attendance Status Today</CardTitle></CardHeader>
+            <CardContent>
+              {attendanceStatus.length === 0 ? (
+                <p className="text-sm text-muted-foreground">You&apos;re not responsible for any section&apos;s attendance.</p>
+              ) : (
+                <div className="divide-y">
+                  {attendanceStatus.map((s) => (
+                    <div key={s.id} className="flex items-center justify-between py-2 text-sm">
+                      <span className="font-medium">{s.label}</span>
+                      {s.total > 0 && s.marked >= s.total ? (
+                        <Badge className="bg-green-600">Marked</Badge>
+                      ) : (
+                        <Badge variant="destructive">Pending</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-2">
       <h1 className="text-2xl font-bold">Welcome</h1>
