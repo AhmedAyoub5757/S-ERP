@@ -584,6 +584,91 @@ export default async function DashboardPage() {
     )
   }
 
+  if (roles.includes('receptionist')) {
+    const startOfMonth = new Date()
+    startOfMonth.setDate(1)
+    startOfMonth.setHours(0, 0, 0, 0)
+
+    const [
+      { count: activeStudents },
+      { count: pendingCount },
+      { count: approvedCount },
+      { count: thisMonthCount },
+      { data: recentApplications },
+    ] = await Promise.all([
+      supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+      supabase.from('admission_applications').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabase.from('admission_applications').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
+      supabase
+        .from('admission_applications')
+        .select('*', { count: 'exact', head: true })
+        .gte('submitted_at', startOfMonth.toISOString()),
+      supabase
+        .from('admission_applications')
+        .select('id, applicant_name, status, submitted_at, classes ( name )')
+        .order('submitted_at', { ascending: false })
+        .limit(10),
+    ])
+
+    const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      pending: 'outline',
+      approved: 'secondary',
+      enrolled: 'default',
+      rejected: 'destructive',
+    }
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">Front Desk Overview</h1>
+          <p className="text-muted-foreground">Admissions pipeline and student records at a glance.</p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader><CardTitle className="text-sm text-muted-foreground">Active Students</CardTitle></CardHeader>
+            <CardContent className="text-2xl font-bold">{activeStudents ?? 0}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-sm text-muted-foreground">Pending Applications</CardTitle></CardHeader>
+            <CardContent className="text-2xl font-bold text-yellow-600">{pendingCount ?? 0}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-sm text-muted-foreground">Approved (Awaiting Enrollment)</CardTitle></CardHeader>
+            <CardContent className="text-2xl font-bold">{approvedCount ?? 0}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-sm text-muted-foreground">Applications This Month</CardTitle></CardHeader>
+            <CardContent className="text-2xl font-bold">{thisMonthCount ?? 0}</CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader><CardTitle>Recent Applications</CardTitle></CardHeader>
+          <CardContent>
+            {(recentApplications ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No applications submitted yet.</p>
+            ) : (
+              <div className="divide-y">
+                {(recentApplications ?? []).map((a: any) => (
+                  <div key={a.id} className="flex items-center justify-between py-2 text-sm">
+                    <div>
+                      <p className="font-medium">{a.applicant_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Applying for {a.classes?.name ?? 'Unknown'} · {new Date(a.submitted_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge variant={STATUS_VARIANT[a.status] ?? 'outline'}>{a.status}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-2">
       <h1 className="text-2xl font-bold">Welcome</h1>

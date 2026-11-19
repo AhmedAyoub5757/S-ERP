@@ -9,6 +9,7 @@ import {
   Wallet,
   Clock,
   Megaphone,
+  ClipboardList,
 } from "lucide-react";
 
 export type NavItem = {
@@ -100,5 +101,11 @@ export const navItems: NavItem[] = [
       "receptionist",
       "accountant",
     ],
+  },
+  {
+    title: "Admissions",
+    url: "/dashboard/admissions",
+    icon: ClipboardList,
+    roles: ["school_admin", "principal", "receptionist"],
   },
 ];
