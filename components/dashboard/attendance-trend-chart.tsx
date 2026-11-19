@@ -12,7 +12,12 @@ export function AttendanceTrendChart({ data }: { data: { date: string; percentPr
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="date" fontSize={12} />
         <YAxis domain={[0, 100]} fontSize={12} unit="%" />
-        <Tooltip formatter={(value: number) => [`${value}%`, 'Present']} />
+        <Tooltip
+          formatter={(value) => [
+            `${value ?? 0}%`,
+            'Present',
+          ]}
+        />
         <Line type="monotone" dataKey="percentPresent" stroke="#2563eb" strokeWidth={2} dot={false} />
       </LineChart>
     </ResponsiveContainer>
