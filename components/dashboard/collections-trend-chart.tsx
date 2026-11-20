@@ -13,7 +13,7 @@ export function CollectionsTrendChart({ data }: { data: { date: string; amount: 
         <XAxis dataKey="date" fontSize={12} />
         <YAxis fontSize={12} />
         <Tooltip formatter={(value) => [`Rs. ${Number(value ?? 0).toLocaleString()}`, 'Collected']} />
-        <Bar dataKey="amount" fill="#16a34a" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="amount" fill="#4f705f" radius={[3, 3, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )

@@ -14,7 +14,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { navItems } from '@/lib/nav-config'
-import { GraduationCap, User as UserIcon } from 'lucide-react'
+import { GraduationCap, User as UserIcon, ChevronRight } from 'lucide-react'
 import { NavigationProgress } from '@/components/navigation-progress'
 
 export function AppSidebar({ roles, userId }: { roles: string[]; userId: string }) {
@@ -32,22 +32,32 @@ export function AppSidebar({ roles, userId }: { roles: string[]; userId: string 
 
   return (
     <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <GraduationCap className="h-6 w-6" />
-          <span className="font-semibold">Greenwood School</span>
+      <SidebarHeader className="border-b border-sidebar-border px-4 py-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center border border-primary/20 bg-primary text-primary-foreground">
+            <GraduationCap className="h-5 w-5" strokeWidth={1.8} />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-serif text-[15px] font-semibold tracking-tight">Greenwood</span>
+            <span className="text-[10px] uppercase tracking-[0.14em] text-sidebar-foreground/55">School Register</span>
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+        <SidebarGroup className="px-3 py-4">
+          <SidebarGroupLabel className="px-2 text-[10px] uppercase tracking-[0.14em] text-sidebar-foreground/45">Workspace</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton render={<Link href={item.url} />} isActive={pathname === item.url}>
-                    <item.icon />
-                    <span>{item.title}</span>
+                  <SidebarMenuButton
+                    render={<Link href={item.url} />}
+                    isActive={pathname === item.url}
+                    className="h-10 rounded-md px-3 data-[active=true]:border-l-2 data-[active=true]:border-primary data-[active=true]:bg-sidebar-accent"
+                  >
+                    <item.icon strokeWidth={1.7} />
+                    <span className="flex-1">{item.title}</span>
+                    {pathname === item.url && <ChevronRight className="h-3.5 w-3.5 text-primary" />}
                     {pathname !== item.url && <NavigationProgress />}
                   </SidebarMenuButton>
                 </SidebarMenuItem>

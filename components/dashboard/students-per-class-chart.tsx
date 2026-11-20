@@ -10,7 +10,7 @@ export function StudentsPerClassChart({ data }: { data: { className: string; cou
         <XAxis dataKey="className" fontSize={12} />
         <YAxis allowDecimals={false} fontSize={12} />
         <Tooltip />
-        <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="count" fill="#4f705f" radius={[3, 3, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )

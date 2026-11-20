@@ -8,6 +8,7 @@ import { FeeStatusChart } from '@/components/dashboard/fee-status-chart'
 import { StudentsPerClassChart } from '@/components/dashboard/students-per-class-chart'
 import { CollectionsTrendChart } from '@/components/dashboard/collections-trend-chart'
 import { AttendanceBreakdownChart } from '@/components/dashboard/attendance-breakdown-chart'
+import { Reveal } from '@/components/reveal'
 
 export const dynamic = 'force-dynamic'
 

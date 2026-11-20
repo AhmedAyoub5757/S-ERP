@@ -18,7 +18,7 @@ export function AttendanceTrendChart({ data }: { data: { date: string; percentPr
             'Present',
           ]}
         />
-        <Line type="monotone" dataKey="percentPresent" stroke="#2563eb" strokeWidth={2} dot={false} />
+        <Line type="monotone" dataKey="percentPresent" stroke="#4f705f" strokeWidth={2} dot={{ r: 3, fill: '#18372a', strokeWidth: 0 }} activeDot={{ r: 5, fill: '#18372a' }} />
       </LineChart>
     </ResponsiveContainer>
   )

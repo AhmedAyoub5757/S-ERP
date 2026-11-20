@@ -100,7 +100,7 @@ export function InvoicesTable({ data }: { data: InvoiceRow[] }) {
         onChange={(e) => setGlobalFilter(e.target.value)}
         className="max-w-sm"
       />
-      <div className="rounded-md border">
+      <div key={table.state.pagination.pageIndex} className="pagination-enter rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup: any) => (

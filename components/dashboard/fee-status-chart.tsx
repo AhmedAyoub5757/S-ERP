@@ -3,10 +3,10 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 const COLORS: Record<string, string> = {
-  paid: '#16a34a',
-  partially_paid: '#ca8a04',
-  unpaid: '#6b7280',
-  overdue: '#dc2626',
+  paid: '#4f705f',
+  partially_paid: '#b08b57',
+  unpaid: '#9a9d96',
+  overdue: '#a75b50',
 }
 
 const LABELS: Record<string, string> = {
