@@ -6,8 +6,27 @@ import { toast } from 'sonner'
 import { reviewApplication } from '@/app/dashboard/admissions/actions'
 import { Button } from '@/components/ui/button'
 import { Check, X } from 'lucide-react'
+import { EnrollApplicationDialog, type EnrollmentSection } from '@/components/admissions/enroll-application-dialog'
 
-export function ReviewActions({ applicationId }: { applicationId: number }) {
+export function ReviewActions({
+  applicationId,
+  status,
+  applicantName,
+  guardianName,
+  guardianPhone,
+  guardianEmail,
+  applyingForClassId,
+  sections,
+}: {
+  applicationId: number
+  status: 'pending' | 'approved' | 'rejected' | 'enrolled'
+  applicantName: string
+  guardianName: string
+  guardianPhone: string
+  guardianEmail: string | null
+  applyingForClassId: number
+  sections: EnrollmentSection[]
+}) {
   const [submitting, setSubmitting] = useState<'approved' | 'rejected' | null>(null)
   const router = useRouter()
 
@@ -26,6 +45,24 @@ export function ReviewActions({ applicationId }: { applicationId: number }) {
     }
     toast.success(decision === 'approved' ? 'Application approved' : 'Application rejected')
     router.refresh()
+  }
+
+  if (status === 'approved') {
+    return (
+      <EnrollApplicationDialog
+        applicationId={applicationId}
+        applicantName={applicantName}
+        guardianName={guardianName}
+        guardianPhone={guardianPhone}
+        guardianEmail={guardianEmail}
+        applyingForClassId={applyingForClassId}
+        sections={sections}
+      />
+    )
+  }
+
+  if (status !== 'pending') {
+    return <span className="text-xs text-muted-foreground">—</span>
   }
 
   return (

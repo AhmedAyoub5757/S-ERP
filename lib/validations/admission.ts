@@ -17,3 +17,15 @@ export const reviewDecisionSchema = z.object({
   decision: z.enum(['approved', 'rejected']),
 })
 export type ReviewDecisionValues = z.infer<typeof reviewDecisionSchema>
+
+export const enrollApplicationSchema = z.object({
+  applicationId: z.number().min(1),
+  admissionNumber: z.string().min(1, 'Admission number is required'),
+  sectionId: z.number().min(1, 'Section is required'),
+  studentEmail: z.string().email('Enter a valid student email'),
+  parentEmail: z.string().email('Enter a valid guardian email'),
+  parentPhone: z.string().min(1, 'Guardian phone is required'),
+  bloodGroup: z.string().optional(),
+  address: z.string().optional(),
+})
+export type EnrollApplicationValues = z.infer<typeof enrollApplicationSchema>

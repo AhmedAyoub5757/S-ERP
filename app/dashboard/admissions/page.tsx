@@ -32,7 +32,7 @@ export default async function AdmissionsPage({
 
   let query = supabase
     .from('admission_applications')
-    .select('id, applicant_name, date_of_birth, gender, guardian_name, guardian_phone, guardian_email, status, submitted_at, classes ( name )')
+    .select('id, applicant_name, date_of_birth, gender, guardian_name, guardian_phone, guardian_email, applying_for_class_id, status, submitted_at, classes ( name )')
     .order('submitted_at', { ascending: false })
 
   if (status) {
@@ -42,9 +42,15 @@ export default async function AdmissionsPage({
   const { data: applications } = await query
 
   let classOptions: { id: number; name: string }[] = []
+  let sectionOptions: { id: number; name: string; class_id: number; classes: { name: string } | null }[] = []
   if (isManager) {
     const { data: classRows } = await supabase.from('classes').select('id, name').order('name')
     classOptions = classRows ?? []
+    const { data: sectionRows } = await supabase
+      .from('sections')
+      .select('id, name, class_id, classes ( name )')
+      .order('name')
+    sectionOptions = (sectionRows ?? []) as unknown as typeof sectionOptions
   }
 
   return (
@@ -95,7 +101,16 @@ export default async function AdmissionsPage({
                   <TableCell>{new Date(a.submitted_at).toLocaleDateString()}</TableCell>
                   {isManager && (
                     <TableCell>
-                      {a.status === 'pending' ? <ReviewActions applicationId={a.id} /> : <span className="text-xs text-muted-foreground">—</span>}
+                      <ReviewActions
+                        applicationId={a.id}
+                        status={a.status}
+                        applicantName={a.applicant_name}
+                        guardianName={a.guardian_name}
+                        guardianPhone={a.guardian_phone}
+                        guardianEmail={a.guardian_email}
+                        applyingForClassId={a.applying_for_class_id}
+                        sections={sectionOptions}
+                      />
                     </TableCell>
                   )}
                 </TableRow>
