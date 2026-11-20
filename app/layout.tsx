@@ -1,34 +1,44 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { WebsitePreloader } from "@/components/website-preloader";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "School Management System",
-  description: "A  modern, full-stack School Management System for a single school, supporting multiple user roles with different permissions and responsibilities. The application should provide a centralized platform for managing the school's daily administrative, academic, financial, and operational activities.",
+  title: "Greenwood School — Management ERP",
+  description:
+    "A modern editorial School Management System supporting multiple user roles with calm, purposeful administrative, academic, and financial workflows.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className="h-full antialiased font-sans"
     >
-      <body className="min-h-full flex flex-col">
-        <WebsitePreloader />
-        {children}
-        <Toaster />
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Manrope:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-full flex flex-col font-sans bg-background text-foreground selection:bg-primary/15 selection:text-primary">
+        <ThemeProvider>
+          <WebsitePreloader />
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

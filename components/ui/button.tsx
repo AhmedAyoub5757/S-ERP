@@ -1,6 +1,6 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 import { Loader2Icon } from "lucide-react"
 
 const buttonVariants = cva(
@@ -46,11 +46,13 @@ function Button({
   size = "default",
   loading = false,
   children,
+  nativeButton,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & { loading?: boolean }) {
   return (
     <ButtonPrimitive
       data-slot="button"
+      nativeButton={nativeButton !== undefined ? nativeButton : props.render ? false : true}
       disabled={loading || props.disabled}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}

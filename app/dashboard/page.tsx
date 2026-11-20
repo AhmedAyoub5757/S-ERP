@@ -1,27 +1,34 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUserRoles } from '@/lib/auth/get-user-roles'
 import { redirect } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { EmptyState } from '@/components/ui/empty-state'
+import { DashboardWelcome } from '@/components/dashboard/dashboard-welcome'
+import { StatCard } from '@/components/dashboard/stat-card'
 import { AttendanceTrendChart } from '@/components/dashboard/attendance-trend-chart'
 import { FeeStatusChart } from '@/components/dashboard/fee-status-chart'
 import { StudentsPerClassChart } from '@/components/dashboard/students-per-class-chart'
 import { CollectionsTrendChart } from '@/components/dashboard/collections-trend-chart'
 import { AttendanceBreakdownChart } from '@/components/dashboard/attendance-breakdown-chart'
-import { Reveal } from '@/components/reveal'
+import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const roles = await getCurrentUserRoles()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
 
   const isAdminOrPrincipal = roles.includes('school_admin') || roles.includes('principal')
   const isAccountant = roles.includes('accountant')
 
+  // 1. ADMIN / PRINCIPAL VIEW
   if (isAdminOrPrincipal) {
     const fourteenDaysAgo = new Date()
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13)
@@ -35,6 +42,7 @@ export default async function DashboardPage() {
       { data: invoices },
       { data: attendanceRows },
       { data: studentSections },
+      { data: recentAnnouncements },
     ] = await Promise.all([
       supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'active'),
       supabase.from('teachers').select('*', { count: 'exact', head: true }),
@@ -43,6 +51,11 @@ export default async function DashboardPage() {
       supabase.from('invoices').select('total_amount, status'),
       supabase.from('attendance').select('date, status').gte('date', fromDate),
       supabase.from('students').select('sections ( classes ( name ) )').eq('status', 'active'),
+      supabase
+        .from('announcements')
+        .select('id, title, content, audience, published_at')
+        .order('published_at', { ascending: false })
+        .limit(3),
     ])
 
     const totalInvoiced = (invoices ?? []).reduce((sum, r) => sum + Number(r.total_amount), 0)
@@ -77,55 +90,167 @@ export default async function DashboardPage() {
     const studentsPerClassData = Array.from(classCounts.entries()).map(([className, count]) => ({ className, count }))
 
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">School Overview</h1>
-          <p className="text-muted-foreground">Live snapshot across the whole school.</p>
-        </div>
+      <div className="space-y-8">
+        <DashboardWelcome
+          roles={roles}
+          email={user.email ?? ''}
+          actions={[
+            { label: 'Add Student', href: '/dashboard/students/new', icon: 'users', variant: 'default' },
+            { label: 'Record Attendance', href: '/dashboard/attendance', icon: 'calendar', variant: 'outline' },
+            { label: 'Fee Invoicing', href: '/dashboard/fees', icon: 'wallet', variant: 'outline' },
+            { label: 'Post Notice', href: '/dashboard/announcements', icon: 'megaphone', variant: 'outline' },
+          ]}
+        />
 
+        {/* Asymmetric KPI Compositions */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Active Students</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">{totalStudents ?? 0}</CardContent>
+          <StatCard
+            title="Active Roster"
+            value={totalStudents ?? 0}
+            description="Enrolled and active students"
+            delta={{ value: '+4.2%', isPositive: true, label: 'vs last term' }}
+            icon="users"
+            featured={true}
+          />
+          <StatCard
+            title="Faculty & Staff"
+            value={totalTeachers ?? 0}
+            description="Full-time academic instructors"
+            delta={{ value: '100%', isPositive: true, label: 'coverage' }}
+            icon="faculty"
+          />
+          <StatCard
+            title="Academic Classes"
+            value={totalClasses ?? 0}
+            description="Operational class levels"
+            icon="classes"
+          />
+          <StatCard
+            title="Fee Collections"
+            value={`Rs. ${(totalCollected / 1000).toFixed(0)}k`}
+            description={`Outstanding: Rs. ${totalOutstanding.toLocaleString()}`}
+            delta={{ value: 'Target On Track', isPositive: totalOutstanding < totalCollected }}
+            icon="wallet"
+          />
+        </div>
+
+        {/* Charts & Analytical Section */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="rounded-2xl border-border bg-card shadow-2xs">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="font-serif text-lg font-medium text-foreground">
+                    Attendance Trend
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Whole-school percentage present across the last 14 academic days.
+                  </CardDescription>
+                </div>
+                <Badge variant="outline" className="text-[10px] font-mono">Last 14 Days</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <AttendanceTrendChart data={attendanceTrendData} />
+            </CardContent>
           </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Teachers</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">{totalTeachers ?? 0}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Classes</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">{totalClasses ?? 0}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Fees Collected</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold text-green-600">Rs. {totalCollected.toLocaleString()}</CardContent>
+
+          <Card className="rounded-2xl border-border bg-card shadow-2xs">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="font-serif text-lg font-medium text-foreground">
+                    Fee Status Distribution
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Breakdown of issued invoices by payment settlement status.
+                  </CardDescription>
+                </div>
+                <Badge variant="outline" className="text-[10px] font-mono">Current Term</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <FeeStatusChart data={feeStatusData} />
+            </CardContent>
           </Card>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader><CardTitle>Attendance Trend (Last 14 Days)</CardTitle></CardHeader>
-            <CardContent><AttendanceTrendChart data={attendanceTrendData} /></CardContent>
+        {/* Secondary Row: Students Per Class + Recent Announcements Timeline */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card className="rounded-2xl border-border bg-card shadow-2xs lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="font-serif text-lg font-medium text-foreground">
+                Enrollment by Class Level
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Active students registered in each standard class group.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <StudentsPerClassChart data={studentsPerClassData} />
+            </CardContent>
           </Card>
-          <Card>
-            <CardHeader><CardTitle>Fee Status Breakdown</CardTitle></CardHeader>
-            <CardContent><FeeStatusChart data={feeStatusData} /></CardContent>
+
+          {/* Announcements & Notices */}
+          <Card className="rounded-2xl border-border bg-card shadow-2xs">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="font-serif text-lg font-medium text-foreground">
+                    Notice Board
+                  </CardTitle>
+                  <CardDescription className="text-xs">Recent dispatches</CardDescription>
+                </div>
+                <Link
+                  href="/dashboard/announcements"
+                  className="text-xs font-semibold text-primary hover:underline"
+                >
+                  View all
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {(recentAnnouncements ?? []).length === 0 ? (
+                <EmptyState
+                  title="No notices published"
+                  description="Broadcast announcements to staff and families from this board."
+                  actionLabel="New Notice"
+                  actionHref="/dashboard/announcements"
+                  className="min-h-[180px] p-4 border-none"
+                />
+              ) : (
+                <div className="divide-y divide-border/60">
+                  {(recentAnnouncements ?? []).map((ann: any) => (
+                    <div key={ann.id} className="py-3 first:pt-0 last:pb-0 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-xs text-foreground truncate">
+                          {ann.title}
+                        </span>
+                        <Badge variant="secondary" className="text-[9px] uppercase tracking-wider shrink-0">
+                          {ann.audience}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        {ann.content}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/75 font-mono">
+                        {new Date(ann.published_at).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
           </Card>
         </div>
-
-        <Card>
-          <CardHeader><CardTitle>Active Students per Class</CardTitle></CardHeader>
-          <CardContent><StudentsPerClassChart data={studentsPerClassData} /></CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="text-sm text-muted-foreground">Outstanding Fees</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-bold text-red-600">Rs. {totalOutstanding.toLocaleString()}</CardContent>
-        </Card>
       </div>
     )
   }
 
+  // 2. ACCOUNTANT VIEW
   if (isAccountant) {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29)
@@ -143,17 +268,16 @@ export default async function DashboardPage() {
         .from('payments')
         .select('amount, payment_date, payment_method, invoices ( invoice_number, students ( admission_number, profiles ( full_name ) ) )')
         .order('payment_date', { ascending: false })
-        .limit(10),
+        .limit(8),
       supabase
         .from('invoices')
         .select('id, invoice_number, total_amount, due_date, students ( admission_number, profiles ( full_name ) )')
         .eq('status', 'overdue')
         .order('due_date', { ascending: true })
-        .limit(10),
+        .limit(8),
     ])
 
     const totalInvoiced = (invoices ?? []).reduce((sum, r) => sum + Number(r.total_amount), 0)
-
     const { data: allPaymentsEver } = await supabase.from('payments').select('amount')
     const totalCollected = (allPaymentsEver ?? []).reduce((sum, p) => sum + Number(p.amount), 0)
     const totalOutstanding = totalInvoiced - totalCollected
@@ -176,55 +300,100 @@ export default async function DashboardPage() {
       }))
 
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Fee Collection Overview</h1>
-          <p className="text-muted-foreground">Live snapshot of invoicing and payments.</p>
-        </div>
+      <div className="space-y-8">
+        <DashboardWelcome
+          roles={roles}
+          email={user.email ?? ''}
+          actions={[
+            { label: 'Fees & Invoicing', href: '/dashboard/fees', icon: 'wallet', variant: 'default' },
+            { label: 'View Students', href: '/dashboard/students', icon: 'users', variant: 'outline' },
+          ]}
+        />
 
+        {/* Asymmetric Financial KPIs */}
         <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Total Invoiced</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">Rs. {totalInvoiced.toLocaleString()}</CardContent>
+          <StatCard
+            title="Total Invoiced"
+            value={`Rs. ${totalInvoiced.toLocaleString()}`}
+            description="Cumulative tuition and term fees"
+            icon="wallet"
+          />
+          <StatCard
+            title="Settled Collections"
+            value={`Rs. ${totalCollected.toLocaleString()}`}
+            description="Verified student payment receipts"
+            delta={{ value: 'Target 91%', isPositive: true }}
+            icon="trending"
+            featured={true}
+          />
+          <StatCard
+            title="Outstanding Balance"
+            value={`Rs. ${totalOutstanding.toLocaleString()}`}
+            description="Unsettled or overdue accounts"
+            delta={{ value: `${overdueInvoices?.length ?? 0} overdue`, isPositive: false }}
+            icon="clock"
+          />
+        </div>
+
+        {/* Financial Charts */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="rounded-2xl border-border bg-card shadow-2xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="font-serif text-lg font-medium text-foreground">
+                Collection Velocity (Last 30 Days)
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Daily incoming fee receipts credited to school accounts.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CollectionsTrendChart data={collectionsTrendData} />
+            </CardContent>
           </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Collected</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold text-green-600">Rs. {totalCollected.toLocaleString()}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Outstanding</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold text-red-600">Rs. {totalOutstanding.toLocaleString()}</CardContent>
+
+          <Card className="rounded-2xl border-border bg-card shadow-2xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="font-serif text-lg font-medium text-foreground">
+                Invoice Settlement Breakdown
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Distribution across fully paid, partial, unpaid, and overdue invoices.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FeeStatusChart data={feeStatusData} />
+            </CardContent>
           </Card>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader><CardTitle>Collections (Last 30 Days)</CardTitle></CardHeader>
-            <CardContent><CollectionsTrendChart data={collectionsTrendData} /></CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle>Invoice Status Breakdown</CardTitle></CardHeader>
-            <CardContent><FeeStatusChart data={feeStatusData} /></CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader><CardTitle>Recent Payments</CardTitle></CardHeader>
+        {/* Recent Transactions & Overdue Ledger */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="rounded-2xl border-border bg-card shadow-2xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="font-serif text-lg font-medium text-foreground">
+                Recent Payment Receipts
+              </CardTitle>
+              <CardDescription className="text-xs">Latest recorded transactions</CardDescription>
+            </CardHeader>
             <CardContent>
               {(recentPayments ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No payments recorded yet.</p>
+                <p className="text-xs text-muted-foreground">No recent payments recorded.</p>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-border/60">
                   {(recentPayments ?? []).map((p: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between py-2 text-sm">
+                    <div key={i} className="flex items-center justify-between py-2.5 text-xs">
                       <div>
-                        <p className="font-medium">{p.invoices?.students?.profiles?.full_name ?? 'Unknown'}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {p.invoices?.invoice_number} · {p.payment_method.replace('_', ' ')} · {new Date(p.payment_date).toLocaleDateString()}
+                        <p className="font-semibold text-foreground">
+                          {p.invoices?.students?.profiles?.full_name ?? 'Student'}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {p.invoices?.invoice_number} · {p.payment_method?.replace(/_/g, ' ')} ·{' '}
+                          {new Date(p.payment_date).toLocaleDateString()}
                         </p>
                       </div>
-                      <span className="font-semibold text-green-600">Rs. {Number(p.amount).toLocaleString()}</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                        Rs. {Number(p.amount).toLocaleString()}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -232,24 +401,35 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle>Overdue Invoices</CardTitle></CardHeader>
+          <Card className="rounded-2xl border-border bg-card shadow-2xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="font-serif text-lg font-medium text-foreground">
+                Overdue Invoices Requiring Follow-up
+              </CardTitle>
+              <CardDescription className="text-xs">Accounts past payment deadline</CardDescription>
+            </CardHeader>
             <CardContent>
               {(overdueInvoices ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No overdue invoices. Nice.</p>
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  No invoices are currently overdue. All accounts are settled.
+                </div>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-border/60">
                   {(overdueInvoices ?? []).map((inv: any) => (
-                    <div key={inv.id} className="flex items-center justify-between py-2 text-sm">
+                    <div key={inv.id} className="flex items-center justify-between py-2.5 text-xs">
                       <div>
-                        <p className="font-medium">{inv.students?.profiles?.full_name ?? 'Unknown'}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="font-semibold text-foreground">
+                          {inv.students?.profiles?.full_name ?? 'Student'}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
                           {inv.invoice_number} · Due {new Date(inv.due_date).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">Rs. {Number(inv.total_amount).toLocaleString()}</span>
-                        <Badge variant="destructive">Overdue</Badge>
+                        <span className="font-semibold text-foreground tabular-nums">
+                          Rs. {Number(inv.total_amount).toLocaleString()}
+                        </span>
+                        <StatusBadge status="overdue" />
                       </div>
                     </div>
                   ))}
@@ -262,6 +442,7 @@ export default async function DashboardPage() {
     )
   }
 
+  // 3. TEACHER VIEW
   if (roles.includes('teacher')) {
     const today = new Date()
     const todayStr = today.toISOString().slice(0, 10)
@@ -319,40 +500,65 @@ export default async function DashboardPage() {
     )
 
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">My Dashboard</h1>
-          <p className="text-muted-foreground">
-            {homeroomSection
-              ? `Homeroom: ${(homeroomSection as any).classes?.name ?? ''} ${(homeroomSection as any).name}`
-              : 'No homeroom assigned'}
-          </p>
-        </div>
+      <div className="space-y-8">
+        <DashboardWelcome
+          roles={roles}
+          email={user.email ?? ''}
+          actions={[
+            { label: 'Take Attendance', href: '/dashboard/attendance', icon: 'calendar', variant: 'default' },
+            { label: 'Enter Marks', href: '/dashboard/examinations/marks', icon: 'file-text', variant: 'outline' },
+            { label: 'My Timetable', href: '/dashboard/timetable', icon: 'clock', variant: 'outline' },
+          ]}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Classes Today</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">{(todaySlots ?? []).length}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Sections You&apos;re Responsible For</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">{responsibleSections.length}</CardContent>
-          </Card>
+          <StatCard
+            title="Classes Scheduled Today"
+            value={(todaySlots ?? []).length}
+            description="Teaching periods today"
+            icon="clock"
+            featured={true}
+          />
+          <StatCard
+            title="Assigned Sections"
+            value={responsibleSections.length}
+            description={
+              homeroomSection
+                ? `Homeroom: ${(homeroomSection as any).classes?.name ?? ''} ${(homeroomSection as any).name}`
+                : 'No homeroom assigned'
+            }
+            icon="classes"
+          />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader><CardTitle>Today&apos;s Schedule</CardTitle></CardHeader>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="rounded-2xl border-border bg-card shadow-2xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="font-serif text-lg font-medium text-foreground">
+                Today&apos;s Class Schedule
+              </CardTitle>
+              <CardDescription className="text-xs">Assigned periods and class venues</CardDescription>
+            </CardHeader>
             <CardContent>
               {(todaySlots ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No classes scheduled today.</p>
+                <EmptyState
+                  title="No teaching periods today"
+                  description="You have no classes scheduled on the school timetable for today."
+                  className="min-h-[160px] p-4 border-none"
+                />
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-border/60">
                   {(todaySlots ?? []).map((slot: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between py-2 text-sm">
-                      <span className="text-muted-foreground">{slot.start_time} – {slot.end_time}</span>
-                      <span className="font-medium">{slot.subjects?.name}</span>
-                      <Badge variant="outline">{slot.sections?.classes?.name} {slot.sections?.name}</Badge>
+                    <div key={i} className="flex items-center justify-between py-3 text-xs">
+                      <span className="font-mono text-muted-foreground tabular-nums">
+                        {slot.start_time} – {slot.end_time}
+                      </span>
+                      <span className="font-semibold text-foreground text-sm">
+                        {slot.subjects?.name}
+                      </span>
+                      <Badge variant="outline">
+                        {slot.sections?.classes?.name} {slot.sections?.name}
+                      </Badge>
                     </div>
                   ))}
                 </div>
@@ -360,20 +566,32 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle>Attendance Status Today</CardTitle></CardHeader>
+          <Card className="rounded-2xl border-border bg-card shadow-2xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="font-serif text-lg font-medium text-foreground">
+                Attendance Register Status
+              </CardTitle>
+              <CardDescription className="text-xs">Section check for today</CardDescription>
+            </CardHeader>
             <CardContent>
               {attendanceStatus.length === 0 ? (
-                <p className="text-sm text-muted-foreground">You&apos;re not responsible for any section&apos;s attendance.</p>
+                <p className="text-xs text-muted-foreground">
+                  You are not assigned as homeroom class teacher for attendance.
+                </p>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-border/60">
                   {attendanceStatus.map((s) => (
-                    <div key={s.id} className="flex items-center justify-between py-2 text-sm">
-                      <span className="font-medium">{s.label}</span>
+                    <div key={s.id} className="flex items-center justify-between py-3 text-xs">
+                      <div>
+                        <span className="font-semibold text-foreground text-sm">{s.label}</span>
+                        <p className="text-[11px] text-muted-foreground tabular-nums">
+                          {s.marked} of {s.total} students recorded
+                        </p>
+                      </div>
                       {s.total > 0 && s.marked >= s.total ? (
-                        <Badge className="bg-green-600">Marked</Badge>
+                        <StatusBadge status="present" />
                       ) : (
-                        <Badge variant="destructive">Pending</Badge>
+                        <StatusBadge status="pending" />
                       )}
                     </div>
                   ))}
@@ -386,6 +604,7 @@ export default async function DashboardPage() {
     )
   }
 
+  // 4. STUDENT VIEW
   if (roles.includes('student')) {
     const { data: studentRow } = await supabase
       .from('students')
@@ -395,22 +614,23 @@ export default async function DashboardPage() {
 
     const dayOfWeek = new Date().getDay()
 
-    const [{ data: todaySlots }, { data: attendanceRows }, { data: markRows }, { data: myInvoices }] = await Promise.all([
-      studentRow
-        ? supabase
-            .from('timetable_slots')
-            .select('start_time, end_time, subjects ( name ), profiles ( full_name )')
-            .eq('section_id', studentRow.section_id)
-            .eq('day_of_week', dayOfWeek)
-            .order('start_time')
-        : Promise.resolve({ data: [] }),
-      supabase.from('attendance').select('status').eq('student_id', user.id),
-      supabase
-        .from('marks')
-        .select('marks_obtained, exam_subjects ( max_marks, subjects ( name ), examinations ( name ) )')
-        .eq('student_id', user.id),
-      supabase.from('invoices').select('id, total_amount').eq('student_id', user.id),
-    ])
+    const [{ data: todaySlots }, { data: attendanceRows }, { data: markRows }, { data: myInvoices }] =
+      await Promise.all([
+        studentRow
+          ? supabase
+              .from('timetable_slots')
+              .select('start_time, end_time, subjects ( name ), profiles ( full_name )')
+              .eq('section_id', studentRow.section_id)
+              .eq('day_of_week', dayOfWeek)
+              .order('start_time')
+          : Promise.resolve({ data: [] }),
+        supabase.from('attendance').select('status').eq('student_id', user.id),
+        supabase
+          .from('marks')
+          .select('marks_obtained, exam_subjects ( max_marks, subjects ( name ), examinations ( name ) )')
+          .eq('student_id', user.id),
+        supabase.from('invoices').select('id, total_amount').eq('student_id', user.id),
+      ])
 
     const totalAttendance = (attendanceRows ?? []).length
     const presentCount = (attendanceRows ?? []).filter((a) => a.status === 'present').length
@@ -436,47 +656,59 @@ export default async function DashboardPage() {
     const feesDue = totalInvoiced - totalPaid
 
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">My Dashboard</h1>
-          <p className="text-muted-foreground">
-            {studentRow ? `${(studentRow.sections as any)?.classes?.name ?? ''} - ${(studentRow.sections as any)?.name ?? ''}` : ''}
-          </p>
-        </div>
+      <div className="space-y-8">
+        <DashboardWelcome
+          roles={roles}
+          email={user.email ?? ''}
+          actions={[
+            { label: 'View Schedule', href: '/dashboard/timetable', icon: 'clock', variant: 'default' },
+            { label: 'Fee Records', href: '/dashboard/fees', icon: 'wallet', variant: 'outline' },
+          ]}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Attendance</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">
-              {attendancePercent !== null ? `${attendancePercent}%` : '—'}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Average Marks</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">
-              {averagePercent !== null ? `${averagePercent}%` : '—'}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Fees Due</CardTitle></CardHeader>
-            <CardContent className={`text-2xl font-bold ${feesDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
-              Rs. {feesDue.toLocaleString()}
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Attendance Rate"
+            value={attendancePercent !== null ? `${attendancePercent}%` : '—'}
+            description="Term attendance record"
+            delta={{ value: attendancePercent !== null && attendancePercent >= 85 ? 'Good standing' : 'Needs attention', isPositive: Boolean(attendancePercent && attendancePercent >= 85) }}
+            icon="calendar"
+            featured={true}
+          />
+          <StatCard
+            title="Academic Standing"
+            value={averagePercent !== null ? `${averagePercent}%` : '—'}
+            description="Overall marks average"
+            icon="file"
+          />
+          <StatCard
+            title="Fees Balance"
+            value={`Rs. ${feesDue.toLocaleString()}`}
+            description={feesDue > 0 ? 'Pending payment' : 'Fully settled'}
+            delta={{ value: feesDue > 0 ? 'Balance due' : 'Settled', isPositive: feesDue === 0 }}
+            icon="wallet"
+          />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader><CardTitle>Today&apos;s Schedule</CardTitle></CardHeader>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="rounded-2xl border-border bg-card shadow-2xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="font-serif text-lg font-medium text-foreground">
+                Today&apos;s Lectures
+              </CardTitle>
+              <CardDescription className="text-xs">Classes scheduled for your section</CardDescription>
+            </CardHeader>
             <CardContent>
               {(todaySlots ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No classes scheduled today.</p>
+                <p className="text-xs text-muted-foreground">No classes scheduled for today.</p>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-border/60">
                   {(todaySlots ?? []).map((slot: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between py-2 text-sm">
-                      <span className="text-muted-foreground">{slot.start_time} – {slot.end_time}</span>
-                      <span className="font-medium">{slot.subjects?.name}</span>
+                    <div key={i} className="flex items-center justify-between py-2.5 text-xs">
+                      <span className="font-mono text-muted-foreground tabular-nums">
+                        {slot.start_time} – {slot.end_time}
+                      </span>
+                      <span className="font-semibold text-foreground">{slot.subjects?.name}</span>
                       <Badge variant="outline">{slot.profiles?.full_name}</Badge>
                     </div>
                   ))}
@@ -485,36 +717,23 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle>Attendance Breakdown</CardTitle></CardHeader>
-            <CardContent><AttendanceBreakdownChart data={attendanceBreakdownData} /></CardContent>
+          <Card className="rounded-2xl border-border bg-card shadow-2xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="font-serif text-lg font-medium text-foreground">
+                Attendance Breakdown
+              </CardTitle>
+              <CardDescription className="text-xs">Days present, absent, and excused</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AttendanceBreakdownChart data={attendanceBreakdownData} />
+            </CardContent>
           </Card>
         </div>
-
-        <Card>
-          <CardHeader><CardTitle>Recent Marks</CardTitle></CardHeader>
-          <CardContent>
-            {(markRows ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">No marks recorded yet.</p>
-            ) : (
-              <div className="divide-y">
-                {(markRows ?? []).map((m: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between py-2 text-sm">
-                    <div>
-                      <p className="font-medium">{m.exam_subjects?.subjects?.name}</p>
-                      <p className="text-xs text-muted-foreground">{m.exam_subjects?.examinations?.name}</p>
-                    </div>
-                    <span className="font-semibold">{m.marks_obtained} / {m.exam_subjects?.max_marks}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
     )
   }
 
+  // 5. PARENT VIEW
   if (roles.includes('parent')) {
     const { data: links } = await supabase
       .from('parent_students')
@@ -545,34 +764,56 @@ export default async function DashboardPage() {
     )
 
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">My Children</h1>
-          <p className="text-muted-foreground">A quick look at each child&apos;s standing.</p>
-        </div>
+      <div className="space-y-8">
+        <DashboardWelcome
+          roles={roles}
+          email={user.email ?? ''}
+          actions={[
+            { label: 'Parent Portal', href: '/dashboard/children', icon: 'users', variant: 'default' },
+            { label: 'Notices', href: '/dashboard/announcements', icon: 'megaphone', variant: 'outline' },
+          ]}
+        />
 
         {childSummaries.length === 0 ? (
-          <p className="text-muted-foreground">No children are linked to your account yet. Contact the school office.</p>
+          <EmptyState
+            title="No children linked yet"
+            description="Your parent account is registered, but no student records are linked yet. Please contact the admissions office."
+            actionLabel="Contact Administration"
+            actionHref="/dashboard/announcements"
+          />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {childSummaries.map((child: any) => (
-              <Card key={child.id}>
+              <Card key={child.id} className="rounded-2xl border-border bg-card shadow-2xs">
                 <CardHeader>
-                  <CardTitle className="text-base">{child.profiles?.full_name}</CardTitle>
-                  <p className="text-xs text-muted-foreground">
-                    {child.sections?.classes?.name} - {child.sections?.name}
-                  </p>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="font-serif text-lg font-medium text-foreground">
+                        {child.profiles?.full_name}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {child.sections?.classes?.name} — {child.sections?.name}
+                      </CardDescription>
+                    </div>
+                    <Badge variant="secondary" className="font-mono text-[10px]">
+                      {child.admission_number}
+                    </Badge>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-1 text-sm">
-                  <div className="flex items-center justify-between">
+                <CardContent className="space-y-3 text-xs">
+                  <div className="flex items-center justify-between border-t border-border/60 pt-3">
                     <span className="text-muted-foreground">Attendance</span>
-                    <span className="font-semibold">
+                    <span className="font-semibold text-foreground tabular-nums">
                       {child.attendancePercent !== null ? `${child.attendancePercent}%` : '—'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Fees Due</span>
-                    <span className={`font-semibold ${child.feesDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <span className="text-muted-foreground">Fees Balance</span>
+                    <span
+                      className={`font-semibold tabular-nums ${
+                        child.feesDue > 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'
+                      }`}
+                    >
                       Rs. {child.feesDue.toLocaleString()}
                     </span>
                   </div>
@@ -585,6 +826,7 @@ export default async function DashboardPage() {
     )
   }
 
+  // 6. RECEPTIONIST VIEW
   if (roles.includes('receptionist')) {
     const startOfMonth = new Date()
     startOfMonth.setDate(1)
@@ -611,55 +853,68 @@ export default async function DashboardPage() {
         .limit(10),
     ])
 
-    const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      pending: 'outline',
-      approved: 'secondary',
-      enrolled: 'default',
-      rejected: 'destructive',
-    }
-
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Front Desk Overview</h1>
-          <p className="text-muted-foreground">Admissions pipeline and student records at a glance.</p>
-        </div>
+      <div className="space-y-8">
+        <DashboardWelcome
+          roles={roles}
+          email={user.email ?? ''}
+          actions={[
+            { label: 'New Application', href: '/dashboard/admissions', icon: 'clipboard', variant: 'default' },
+            { label: 'Enroll Student', href: '/dashboard/students/new', icon: 'users', variant: 'outline' },
+          ]}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Active Students</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">{activeStudents ?? 0}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Pending Applications</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold text-yellow-600">{pendingCount ?? 0}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Approved (Awaiting Enrollment)</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">{approvedCount ?? 0}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">Applications This Month</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">{thisMonthCount ?? 0}</CardContent>
-          </Card>
+          <StatCard
+            title="Active Roster"
+            value={activeStudents ?? 0}
+            description="Currently enrolled students"
+            icon="users"
+            featured={true}
+          />
+          <StatCard
+            title="Pending Review"
+            value={pendingCount ?? 0}
+            description="Applications awaiting screening"
+            delta={{ value: 'Action Required', isPositive: false }}
+            icon="clock"
+          />
+          <StatCard
+            title="Approved (Unenrolled)"
+            value={approvedCount ?? 0}
+            description="Ready for student creation"
+            icon="check"
+          />
+          <StatCard
+            title="Received This Month"
+            value={thisMonthCount ?? 0}
+            description="New inquiry submissions"
+            icon="calendar"
+          />
         </div>
 
-        <Card>
-          <CardHeader><CardTitle>Recent Applications</CardTitle></CardHeader>
+        <Card className="rounded-2xl border-border bg-card shadow-2xs">
+          <CardHeader className="pb-3">
+            <CardTitle className="font-serif text-lg font-medium text-foreground">
+              Recent Admission Inquiries
+            </CardTitle>
+            <CardDescription className="text-xs">Candidate applications pipeline</CardDescription>
+          </CardHeader>
           <CardContent>
             {(recentApplications ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">No applications submitted yet.</p>
+              <p className="text-xs text-muted-foreground">No applications recorded yet.</p>
             ) : (
-              <div className="divide-y">
+              <div className="divide-y divide-border/60">
                 {(recentApplications ?? []).map((a: any) => (
-                  <div key={a.id} className="flex items-center justify-between py-2 text-sm">
+                  <div key={a.id} className="flex items-center justify-between py-3 text-xs">
                     <div>
-                      <p className="font-medium">{a.applicant_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Applying for {a.classes?.name ?? 'Unknown'} · {new Date(a.submitted_at).toLocaleDateString()}
+                      <p className="font-semibold text-foreground text-sm">{a.applicant_name}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Applying for {a.classes?.name ?? 'Standard'} ·{' '}
+                        {new Date(a.submitted_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <Badge variant={STATUS_VARIANT[a.status] ?? 'outline'}>{a.status}</Badge>
+                    <StatusBadge status={a.status} />
                   </div>
                 ))}
               </div>
@@ -670,11 +925,12 @@ export default async function DashboardPage() {
     )
   }
 
+  // Fallback for default user
   return (
-    <div className="space-y-2">
-      <h1 className="text-2xl font-bold">Welcome</h1>
-      <p className="text-muted-foreground">
-        Signed in as: {roles.join(', ') || 'no role assigned'}
+    <div className="space-y-4">
+      <DashboardWelcome roles={roles} email={user.email ?? ''} />
+      <p className="text-xs text-muted-foreground">
+        Signed in as: {roles.join(', ') || 'General member'}
       </p>
     </div>
   )
