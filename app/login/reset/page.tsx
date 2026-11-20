@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
 
@@ -245,5 +245,18 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  )
+}
+export default function ResetPasswordPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+          Loading password reset...
+        </div>
+      }
+    >
+      <ResetPasswordForm />
+    </React.Suspense>
   )
 }
