@@ -1,18 +1,34 @@
+import type { Metadata } from 'next';
 import { LoginForm } from '@/components/login-form'
-import { ThemeToggle } from '@/components/theme-toggle'
-import {
-  GraduationCap,
-  ShieldCheck,
-  Users,
-  CalendarCheck,
-  Sparkles,
-  BookOpen,
-  Lock,
-  Clock,
-  Compass,
-} from 'lucide-react'
 
-export const dynamic = 'force-dynamic'
+import { ThemeToggle } from '@/components/theme-toggle';
+import { GraduationCap, ShieldCheck, Users, CalendarCheck, Sparkles, BookOpen, Lock, Clock, Compass } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Login – Greenwood School ERP',
+  description: 'Secure login portal for Greenwood School Management ERP.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+  openGraph: {
+    title: 'Login – Greenwood School ERP',
+    description: 'Secure login portal for Greenwood School Management ERP.',
+    url: 'https://s-erp-alpha.vercel.app/login',
+    siteName: 'Greenwood School ERP',
+    images: [{ url: '/s_erp_master_icon.png', width: 512, height: 512 }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Login – Greenwood School ERP',
+    description: 'Secure login portal for Greenwood School Management ERP.',
+    images: ['/s_erp_master_icon.png'],
+  },
+};
+
+
+// export const dynamic = 'force-static'
+export const runtime = 'edge'
 
 export default async function LoginPage({
   searchParams,

@@ -8,6 +8,25 @@ export const metadata: Metadata = {
   title: "Greenwood School — Management ERP",
   description:
     "A modern editorial School Management System supporting multiple user roles with calm, purposeful administrative, academic, and financial workflows.",
+  icons: {
+    icon: "/favicon-48x48.png",
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "Greenwood School ERP",
+    description:
+      "Manage school administration, academics, and finance with secure role‑based access.",
+    url: "https://s-erp-alpha.vercel.app",
+    siteName: "Greenwood School ERP",
+    images: [{ url: "/s_erp_master_icon.png", width: 512, height: 512 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Greenwood School ERP",
+    description: "Secure, feature‑rich ERP for schools.",
+    images: ["/s_erp_master_icon.png"],
+  },
 };
 
 export default function RootLayout({
@@ -16,22 +35,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className="h-full antialiased font-sans"
-    >
+    <html lang="en" suppressHydrationWarning className="h-full antialiased font-sans">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Manrope:wght@300;400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground selection:bg-primary/15 selection:text-primary">
         <ThemeProvider>
